@@ -18,25 +18,26 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Unzip source archive if present
+      - name: Unzip source archive and move files
         run: |
           if ls *.zip 1> /dev/null 2>&1; then
             unzip -o *.zip
+            subfolder=$(find . -mindepth 2 -name "package.json" -exec dirname {} \;)
+            if [ -n "$subfolder" ]; then
+              cp -rn $subfolder/* .
+            fi
           fi
 
       - name: Install dependencies & Build
         run: |
-          npm install
-          npm run build || true
-          npm run build-ff || true
-          npm run pack || true
-          npm run pack-ff || true
+          npm ci || npm install
+          npm run pack-ff || npm run pack || npm run build-ff || npm run build || true
 
       - name: Save build output
         uses: actions/upload-artifact@v4
         with:
           name: compiled-extension
           path: |
-            vpn-proton-*.zip
+            *.zip
             dist/
             build/
