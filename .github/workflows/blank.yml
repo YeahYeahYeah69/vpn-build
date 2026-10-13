@@ -1,0 +1,42 @@
+name: Build Extension
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Unzip source archive if present
+        run: |
+          if ls *.zip 1> /dev/null 2>&1; then
+            unzip -o *.zip
+          fi
+
+      - name: Install dependencies & Build
+        run: |
+          npm install
+          npm run build || true
+          npm run build-ff || true
+          npm run pack || true
+          npm run pack-ff || true
+
+      - name: Save build output
+        uses: actions/upload-artifact@v4
+        with:
+          name: compiled-extension
+          path: |
+            vpn-proton-*.zip
+            dist/
+            build/
