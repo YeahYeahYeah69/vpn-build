@@ -10,34 +10,36 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Unzip source archive and move files
+      - name: Inspect and Unzip
         run: |
+          pwd
+          ls -la
           if ls *.zip 1> /dev/null 2>&1; then
-            unzip -o *.zip
-            subfolder=$(find . -mindepth 2 -name "package.json" -exec dirname {} \;)
-            if [ -n "$subfolder" ]; then
-              cp -rn $subfolder/* .
-            fi
+            unzip -o *.zip -d extracted || true
+            cp -r extracted/*/. . 2>/dev/null || cp -r extracted/. . 2>/dev/null || true
           fi
 
-      - name: Install dependencies & Build
-        run: |
-          npm ci || npm install
-          npm run pack-ff || npm run pack || npm run build-ff || npm run build || true
+      - name: Install Dependencies
+        run: npm install --legacy-peer-deps || npm install --force
 
-      - name: Save build output
+      - name: Run Build
+        run: |
+          npm run build || npm run pack || npm run build-ff || npm run pack-ff || true
+
+      - name: Create Zip Package
+        run: |
+          zip -r compiled-extension.zip . -x "node_modules/*" ".git/*" ".github/*"
+
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: compiled-extension
-          path: |
-            *.zip
-            dist/
-            build/
+          path: compiled-extension.zip
